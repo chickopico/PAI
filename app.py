@@ -26,6 +26,9 @@ def load_and_prepare_data():
     df['price'] = pd.to_numeric(df['price'].replace(r'[\$,]', '', regex=True), errors='coerce')  # Handle any $ or commas in price
     df = df.dropna(subset=['price', 'latitude', 'longitude'])
     df = df[df['price'] > 20]
+    df = df[df['price'].between(30, 1500)]  # Remove $10 scams & $10k mansions
+    price_99 = df['price'].quantile(0.99)
+    df['price'] = df['price'].clip(upper=price_99)
     df['reviews_per_month'] = df['reviews_per_month'].fillna(0)
     df['number_of_reviews_ltm'] = df['number_of_reviews_ltm'].fillna(0)
     df['calculated_host_listings_count'] = df['calculated_host_listings_count'].fillna(1)
@@ -193,5 +196,6 @@ if not results.empty:
             icon=folium.Icon(color='red' if r.Smart_Score > 80 else 'orange' if r.Smart_Score > 70 else 'blue')
         ).add_to(marker_cluster)
     st_folium(m, width=700, height=500)
+
 
 st.caption("ML Model: CatBoost (Trained with 80/20 split) | Hybrid Score = 70% ML + 30% Expert Rules | Nov 2025 Data")
